@@ -1,3 +1,4 @@
+use colored::*;
 use std::error::Error;
 use std::fs;
 
@@ -68,7 +69,7 @@ pub fn print(path: String, numbered: bool) -> Result<(), Box<dyn Error>> {
         let mut counter = 0;
         for line in contents.lines() {
             counter = counter + 1;
-            println!("{counter} | {line}");
+            println!("{counter} {} {line}", "|".yellow());
         }
     } else {
         println!("{contents}");
@@ -85,11 +86,12 @@ pub fn help(help_command: Option<String>) -> Result<(), Box<dyn Error>> {
                 "
 Prints the contents of a file.
 
-print 'file_path' (--numbered)
+{}
 
 - The file path is required following the print argument.
 - Numbered flag is optional, adding it will add line numbers to the output.
-            "
+            ",
+                "print 'file_path' (--numbered)".yellow()
             );
         } else if help_command == "list" {
             println!(
@@ -98,15 +100,18 @@ Prints all useable commands.
             "
             );
         } else {
-            println!("Command not found");
+            println!("{}", "Command not found".red());
         }
     } else {
         println!(
             "
-HELP\t\tProvides help information for Rose commands
-PRINT\t\tPrints text from a specified file
-LIST\t\tPrints All Commands
-"
+{}\t\tProvides help information for Rose commands
+{}\t\tPrints text from a specified file
+{}\t\tPrints All Commands
+",
+            "HELP".yellow(),
+            "PRINT".yellow(),
+            "LIST".yellow()
         );
     }
 
@@ -116,10 +121,13 @@ LIST\t\tPrints All Commands
 pub fn list() -> Result<(), Box<dyn Error>> {
     println!(
         "
-HELP
-PRINT
-LIST
-    "
+{}
+{}
+{}
+",
+        "HELP".yellow(),
+        "PRINT".yellow(),
+        "LIST".yellow()
     );
 
     Ok(())
