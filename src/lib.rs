@@ -49,7 +49,7 @@ impl Config {
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 
     match config.command {
-        Command::Help { help_command} => help()?,
+        Command::Help { help_command} => help(help_command)?,
         Command::Print {file_path, numbered} => print(file_path, numbered)?,
         _ => {}
     }
@@ -73,13 +73,31 @@ pub fn print(path: String, numbered: bool) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn help() -> Result<(), Box<dyn Error>> {
+pub fn help(help_command: Option<String>) -> Result<(), Box<dyn Error>> {
 
-    println!("
+    if help_command.is_some() {
+        let help_command = help_command.unwrap();
+        if help_command == "print" {
+            println!("
+Prints the contents of a file.
+
+print 'file_path' (--numbered)
+
+- The file path is required following the print argument.
+- Numbered flag is optional, adding it will add line numbers to the output.
+            ");
+        }else{
+            println!("Command not found");
+        }
+    }else{
+        println!("
 HELP\t\tProvides help information for Rose commands
 PRINT\t\tPrints text from a specified file
 "
-    );
+        );
+    }
+
+
 
     Ok(())
 }
