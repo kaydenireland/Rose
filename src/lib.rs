@@ -1,14 +1,14 @@
 use std::error::Error;
 use std::fs;
 
-pub enum Command{
-    Help {help_command: Option<String>},
-    Print {file_path: String, numbered: bool},
-    List
+pub enum Command {
+    Help { help_command: Option<String> },
+    Print { file_path: String, numbered: bool },
+    List,
 }
 
 pub struct Config {
-    pub command: Command
+    pub command: Command,
 }
 
 impl Config {
@@ -31,27 +31,31 @@ impl Config {
                 let file_path = args[2].clone();
                 let numbered: bool;
                 if args.len() > 3 {
-                    numbered = args[3] == "--numbered";
-                }else{
+                    numbered = args[3].to_lowercase() == "--numbered";
+                } else {
                     numbered = false;
                 }
-                Command::Print { file_path, numbered }
+                Command::Print {
+                    file_path,
+                    numbered,
+                }
             }
             "list" => Command::List,
             _ => return Err("Unknown command"),
         };
-
 
         Ok(Config { command })
     }
 }
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-
     match config.command {
-        Command::Help { help_command} => help(help_command)?,
-        Command::Print {file_path, numbered} => print(file_path, numbered)?,
-        _ => {}
+        Command::Help { help_command } => help(help_command)?,
+        Command::Print {
+            file_path,
+            numbered,
+        } => print(file_path, numbered)?,
+        Command::List => list()?,
     }
 
     Ok(())
@@ -66,7 +70,7 @@ pub fn print(path: String, numbered: bool) -> Result<(), Box<dyn Error>> {
             counter = counter + 1;
             println!("{counter} | {line}");
         }
-    }else{
+    } else {
         println!("{contents}");
     }
 
@@ -74,30 +78,49 @@ pub fn print(path: String, numbered: bool) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn help(help_command: Option<String>) -> Result<(), Box<dyn Error>> {
-
     if help_command.is_some() {
-        let help_command = help_command.unwrap();
+        let help_command = help_command.unwrap().to_lowercase();
         if help_command == "print" {
-            println!("
+            println!(
+                "
 Prints the contents of a file.
 
 print 'file_path' (--numbered)
 
 - The file path is required following the print argument.
 - Numbered flag is optional, adding it will add line numbers to the output.
-            ");
-        }else{
+            "
+            );
+        } else if help_command == "list" {
+            println!(
+                "
+Prints all useable commands.
+            "
+            );
+        } else {
             println!("Command not found");
         }
-    }else{
-        println!("
+    } else {
+        println!(
+            "
 HELP\t\tProvides help information for Rose commands
 PRINT\t\tPrints text from a specified file
+LIST\t\tPrints All Commands
 "
         );
     }
 
+    Ok(())
+}
 
+pub fn list() -> Result<(), Box<dyn Error>> {
+    println!(
+        "
+HELP
+PRINT
+LIST
+    "
+    );
 
     Ok(())
 }
