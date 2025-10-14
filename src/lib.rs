@@ -66,10 +66,16 @@ pub fn print(path: String, numbered: bool) -> Result<(), Box<dyn Error>> {
     let contents = fs::read_to_string(path)?;
 
     if numbered {
+        // Calculate width needed for the largest line number so the pipe aligns.
+        let total_lines = contents.lines().count();
+        let width = total_lines.to_string().len();
+
         let mut counter = 0;
         for line in contents.lines() {
-            counter = counter + 1;
-            println!("{counter} {} {line}", "|".yellow());
+            counter += 1;
+            // Right-align the counter within `width` characters, colorize it, then add a small spacer and the colored pipe.
+            let num_str = format!("{num:>width$}", num = counter, width = width).yellow();
+            println!("{} {} {line}", num_str, "|".yellow(), line = line);
         }
     } else {
         println!("{contents}");
