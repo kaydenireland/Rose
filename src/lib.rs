@@ -2,6 +2,8 @@ use colored::*;
 use std::error::Error;
 use std::fs;
 
+pub mod grammar;
+
 pub enum Command {
     Help { help_command: Option<String> },
     Print { file_path: String, numbered: bool },
