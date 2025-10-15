@@ -7,11 +7,11 @@ pub mod grammar;
 pub enum Command {
     Help { help_command: Option<String> },
     Print { file_path: String, numbered: bool },
-    List,
+    List
 }
 
 pub struct Config {
-    pub command: Command,
+    pub command: Command
 }
 
 impl Config {
@@ -54,11 +54,8 @@ impl Config {
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     match config.command {
         Command::Help { help_command } => help(help_command)?,
-        Command::Print {
-            file_path,
-            numbered,
-        } => print(file_path, numbered)?,
-        Command::List => list()?,
+        Command::Print { file_path, numbered} => print(file_path, numbered)?,
+        Command::List => list()?
     }
 
     Ok(())
@@ -75,7 +72,7 @@ pub fn print(path: String, numbered: bool) -> Result<(), Box<dyn Error>> {
         let mut counter = 0;
         for line in contents.lines() {
             counter += 1;
-            // Right-align the counter within `width` characters, colorize it, then add a small spacer and the colored pipe.
+            // Format string so pipe remains in same spot throughout output
             let num_str = format!("{num:>width$}", num = counter, width = width).yellow();
             println!("{} {} {line}", num_str, "|".yellow(), line = line);
         }
