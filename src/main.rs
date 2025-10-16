@@ -17,28 +17,22 @@ fn main() {
         process::exit(1);
     }
 
-    grammar_test();
+    example_manual();
 }
 
-fn grammar_test() {
-    let r1 = rose::grammar::Rule::new('Q', "aA");
-    let r2 = rose::grammar::Rule::new('A', "Aa");
-    let r3 = Rule::new('A', "b");
-
-    print!("Rule 2: {} | Valid: {}\n", r2.display(), r2.is_valid());
-
-    println!("\nRule 1: Right Regular: {}, Left Regular: {}", r1.is_right_regular(), r1.is_left_regular());
-    println!("Rule 2: Right Regular: {}, Left Regular: {}", r2.is_right_regular(), r2.is_left_regular());
-    println!("Rule 3: Right Regular: {}, Left Regular: {}", r3.is_right_regular(), r3.is_left_regular());
-
-    let rules = vec![r1, r2, r3];
+fn example_manual() {
+    let rules = vec![Rule::new('E', "E+e"), Rule::new('E', "x")];
     let grammar = Grammar::from_rules(rules);
 
-    print!("{}", grammar.display());
-    print!("Is grammar valid? {}\n", grammar.is_valid());
-    print!("Is grammar regular? {}\n", grammar.is_regular());
+    println!("Grammar Valid: {:}", grammar.is_valid());
+    println!("Grammar Regular: {:}", grammar.is_regular());
 
-    print!("Rules with A on LHS: {:?}\n", grammar.rule_idxs_from_nt('A'));
-    print!("Rules with B on LHS: {:?}\n", grammar.rule_idxs_from_nt('B'));
-    print!("Rules with Q on LHS: {:?}\n", grammar.rule_idxs_from_nt('Q'));
+    let mut derivation = Derivation::new(&grammar);
+    // TODO: Handle errors
+    derivation.derive_leftmost(&grammar, 0);
+    derivation.derive_leftmost(&grammar, 0);
+    derivation.derive_leftmost(&grammar, 1);
+
+    println!("Derivation Complete: {:}", derivation.is_complete());
+    println!("Derivation Word: {:}", derivation.word());
 }
