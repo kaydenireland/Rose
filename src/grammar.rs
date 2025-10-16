@@ -40,19 +40,32 @@ impl Rule {
 
     pub fn is_left_regular(&self) -> bool {
         let right: Vec<char> = self.rhs.chars().collect();
-        match right.len() {
-            2 => right[0].is_ascii_uppercase() && right[1].is_ascii_lowercase(),
-            _ => false,
+
+        for (i, char) in right.iter().enumerate() {
+            if char.is_uppercase() && i == 0 {
+                continue;
+            } else if char.is_lowercase() && i == 0 {
+                return false;
+            } else if char.is_uppercase() {
+                return false;
+            }
         }
+        true
     }
 
     pub fn is_right_regular(&self) -> bool {
         let right: Vec<char> = self.rhs.chars().collect();
-        match right.len() {
-            1 => right[0].is_ascii_lowercase(),
-            2 => right[0].is_ascii_lowercase() && right[1].is_ascii_uppercase(),
-            _ => false,
+
+        for (i, char) in right.iter().enumerate() {
+            if right.len() == 1 && i == 0 && char.is_lowercase() {
+                return true;
+            } else if char.is_uppercase() && i == right.len() - 1 {
+                return true;
+            } else if char.is_uppercase() {
+                return false;
+            }
         }
+        true
     }
 }
 
