@@ -271,7 +271,7 @@ impl Derivation {
         loop {
             current_rule_index = rng.random_range(0..grammar.rules.len());
 
-            self.derive_leftmost(grammar, current_rule_index);
+            let _ = self.derive_leftmost(grammar, current_rule_index);
 
             step_count += 1;
 

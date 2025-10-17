@@ -17,9 +17,10 @@ fn main() {
         process::exit(1);
     }
 
-    example_manual();
+    // example_manual();
 }
 
+#[allow(dead_code)]
 fn example_manual() {
     let rules = vec![Rule::new('E', "E+e"),
     Rule::new('E',"Ee"),

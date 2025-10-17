@@ -2,16 +2,20 @@ use colored::*;
 use std::error::Error;
 use std::fs;
 
+use crate::grammar::{Grammar, Rule, Derivation};
+
 pub mod grammar;
 
 pub enum Command {
     Help { help_command: Option<String> },
     Print { file_path: String, numbered: bool },
-    List,
+    List {list_command: Option<String> },
+    Derive {derive_command: String}
 }
 
 pub struct Config {
     pub command: Command,
+    pub grammar: Grammar
 }
 
 impl Config {
@@ -19,6 +23,14 @@ impl Config {
         if args.len() < 2 {
             return Err("Not enough arguments");
         }
+
+        let rules = vec![Rule::new('E', "E+e"),
+        Rule::new('E',"Ee"),
+        Rule::new('E', "eeE"),
+        Rule::new('E', "Gp"),
+        Rule::new('G', "s"),
+        Rule::new('E', "x")];
+        let grammar = Grammar::from_rules(rules);
 
         let cmd = args[1].as_str();
         let command = match cmd {
@@ -43,11 +55,22 @@ impl Config {
                     numbered,
                 }
             }
-            "list" => Command::List,
+            "list" => {
+                let sub = args.get(2).cloned();
+                Command::List{ list_command: sub }
+            },
+            "derive" => {
+                if args.len() < 3 {
+                    return Err("Enter Derive Command");
+                }
+
+                let derive_command = args[2].clone();
+                Command::Derive { derive_command: derive_command }
+            },
             _ => return Err("Unknown command"),
         };
 
-        Ok(Config { command })
+        Ok(Config { command, grammar })
     }
 }
 
@@ -58,7 +81,8 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
             file_path,
             numbered,
         } => print(file_path, numbered)?,
-        Command::List => list()?,
+        Command::List { list_command } => list(&config.grammar, list_command)?,
+        Command::Derive { derive_command } => derive(&config.grammar, derive_command)?
     }
 
     Ok(())
@@ -126,17 +150,40 @@ Prints all useable commands.
     Ok(())
 }
 
-pub fn list() -> Result<(), Box<dyn Error>> {
-    println!(
-        "
-{}
-{}
-{}
-",
-        "HELP".yellow(),
-        "PRINT".yellow(),
-        "LIST".yellow()
-    );
+pub fn list(grammar: &Grammar, list_command: Option<String>) -> Result<(), Box<dyn Error>> {
+
+    if list_command.is_some(){
+        let list_command = list_command.unwrap().to_lowercase();
+        if list_command == "rules"{
+            for (_, rule) in grammar.rules.iter().enumerate(){
+                println!("{}", rule.display())
+            }
+        }
+    }else{
+        println!(
+            "
+    {}
+    {}
+    {}
+    ",
+            "HELP".yellow(),
+            "PRINT".yellow(),
+            "LIST".yellow()
+        );
+    }
+
+    Ok(())
+}
+
+
+pub fn derive(grammar: &Grammar, derive_command: String) -> Result<(), Box<dyn Error>>{
+
+    if derive_command.to_lowercase() == "random"{
+    let mut derivation = Derivation::new(&grammar);
+    println!("Random Derived Word: {}", derivation.print_random(&grammar, None).unwrap_or("No Word Generated".to_string()).yellow());
+
+    }
+
 
     Ok(())
 }
