@@ -180,7 +180,7 @@ pub fn derive(grammar: &Grammar, derive_command: String) -> Result<(), Box<dyn E
 
     if derive_command.to_lowercase() == "random"{
     let mut derivation = Derivation::new(&grammar);
-    println!("Random Derived Word: {}", derivation.print_random(&grammar, None).unwrap_or("No Word Generated".to_string()).yellow());
+    println!("Random Derived Word: {}", derivation.print_random(&grammar, Some(20)).unwrap_or("No Word Generated".to_string()).yellow());
 
     }
 
