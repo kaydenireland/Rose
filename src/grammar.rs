@@ -255,4 +255,40 @@ impl Derivation {
     pub fn word(&self) -> String {
         self.steps.last().unwrap().1.form.clone()
     }
+
+    pub fn print_random(
+        &mut self,
+        grammar: &Grammar,
+        step_limit: Option<u32>
+    ) -> Option<String>{
+        use rand::prelude::*;
+
+        let mut rng = rand::rng();
+        let mut current_rule_index: usize;
+
+        let mut step_count = 0;
+
+        loop {
+            current_rule_index = rng.random_range(0..grammar.rules.len());
+
+            self.derive_leftmost(grammar, current_rule_index);
+
+            step_count += 1;
+
+            if step_count == step_limit.unwrap_or(0) {
+                break;
+            }
+
+            if self.is_complete(){
+                break;
+            }
+
+        }
+
+        if self.is_complete() {
+            return Some(self.word());
+        }
+
+        None
+    }
 }

@@ -2,7 +2,7 @@ use std::env;
 use std::process;
 
 use rose::Config;
-use rose::grammar::{Derivation, DerivationStep, Grammar, Rule, Sentential};
+use rose::grammar::{Derivation, Grammar, Rule};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -21,18 +21,20 @@ fn main() {
 }
 
 fn example_manual() {
-    let rules = vec![Rule::new('E', "E+e"), Rule::new('E', "x")];
+    let rules = vec![Rule::new('E', "E+e"),
+    Rule::new('E',"Ee"),
+    Rule::new('E', "eeE"),
+    Rule::new('E', "Gp"),
+    Rule::new('G', "s"),
+    Rule::new('E', "x")];
     let grammar = Grammar::from_rules(rules);
 
     println!("Grammar Valid: {:}", grammar.is_valid());
     println!("Grammar Regular: {:}", grammar.is_regular());
 
     let mut derivation = Derivation::new(&grammar);
-    // TODO: Handle errors
-    derivation.derive_leftmost(&grammar, 0);
-    derivation.derive_leftmost(&grammar, 0);
-    derivation.derive_leftmost(&grammar, 1);
+    println!("Random Derived Word (5 Step Limit): {}", derivation.print_random(&grammar, Some(5)).unwrap_or("No Word Generated".to_string()));
+    derivation = Derivation::new(&grammar);
+    println!("Random Derived Word (No Step Limit): {}", derivation.print_random(&grammar, None).unwrap_or("No Word Generated".to_string()));
 
-    println!("Derivation Complete: {:}", derivation.is_complete());
-    println!("Derivation Word: {:}", derivation.word());
 }
