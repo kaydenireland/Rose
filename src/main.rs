@@ -24,13 +24,8 @@ fn main() {
 
 #[allow(dead_code)]
 fn test_lexer() {
-    let mut lexer = Lexer::new("Hello World".to_string());
-    println!("{:?}", lexer.advance());
-    println!("{:?}", lexer.curr());
-    println!("{:?}", lexer.advance());
-    println!("{:?}", lexer.curr());
-    println!("{:?}", lexer.advance());
-    println!("{:?}", lexer.curr());
+    let mut lexer = Lexer::new("{ mr [ rager] (oh) where} you goin".to_string());
+    lexer.print_tokens();
 }
 
 #[allow(dead_code)]

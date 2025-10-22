@@ -128,9 +128,33 @@ impl Lexer {
 
             match self.state {
                 LexerState::Start => match current_char {
-                    'A'..'Z' | 'a'..'z' | '_' => {
+                    'A'..='Z' | 'a'..='z' | '_' => {
                         self.state = LexerState::State1;
                         self.buffer_string.push(current_char);
+                    }
+                    '{' => {
+                        self.current_token = Token::BRACE_L;
+                        break;
+                    }
+                    '}' => {
+                        self.current_token = Token::BRACE_R;
+                        break;
+                    }
+                    '[' => {
+                        self.current_token = Token::BRACKET_L;
+                        break;
+                    }
+                    ']' => {
+                        self.current_token = Token::BRACKET_R;
+                        break;
+                    }
+                    '(' => {
+                        self.current_token = Token::PARENS_L;
+                        break;
+                    }
+                    ')' => {
+                        self.current_token = Token::PARENS_R;
+                        break;
                     }
 
                     _ => {}
@@ -161,5 +185,15 @@ impl Lexer {
 
     pub fn curr(&self) -> &Token {
         &self.current_token
+    }
+
+    pub fn print_tokens(&mut self) {
+        loop {
+            self.advance();
+            println!("{:?}", self.curr());
+            if let Token::EOI = self.curr() {
+                break;
+            }
+        }
     }
 }
