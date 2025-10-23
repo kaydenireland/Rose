@@ -1,0 +1,13 @@
+func add(x : i32) -> i32
+[
+    let value : i32 = 35
+    value = value + x;
+    return value;
+]
+
+func main()
+[
+    let sum : i32 = 0;
+    sum = add(2) + 5;
+    print "sum=", sum;
+]

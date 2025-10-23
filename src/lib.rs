@@ -2,20 +2,21 @@ use colored::*;
 use std::error::Error;
 use std::fs;
 
-use crate::grammar::{Grammar, Rule, Derivation};
+use crate::grammar::{Derivation, Grammar, Rule};
 
 pub mod grammar;
+pub mod lexer;
 
 pub enum Command {
     Help { help_command: Option<String> },
     Print { file_path: String, numbered: bool },
-    List {list_command: Option<String> },
-    Derive {derive_command: String}
+    List { list_command: Option<String> },
+    Derive { derive_command: String },
 }
 
 pub struct Config {
     pub command: Command,
-    pub grammar: Grammar
+    pub grammar: Grammar,
 }
 
 impl Config {
@@ -24,12 +25,14 @@ impl Config {
             return Err("Not enough arguments");
         }
 
-        let rules = vec![Rule::new('E', "E+e"),
-        Rule::new('E',"Ee"),
-        Rule::new('E', "eeE"),
-        Rule::new('E', "Gp"),
-        Rule::new('G', "s"),
-        Rule::new('E', "x")];
+        let rules = vec![
+            Rule::new('E', "E+e"),
+            Rule::new('E', "Ee"),
+            Rule::new('E', "eeE"),
+            Rule::new('E', "Gp"),
+            Rule::new('G', "s"),
+            Rule::new('E', "x"),
+        ];
         let grammar = Grammar::from_rules(rules);
 
         let cmd = args[1].as_str();
@@ -57,16 +60,18 @@ impl Config {
             }
             "list" => {
                 let sub = args.get(2).cloned();
-                Command::List{ list_command: sub }
-            },
+                Command::List { list_command: sub }
+            }
             "derive" => {
                 if args.len() < 3 {
                     return Err("Enter Derive Command");
                 }
 
                 let derive_command = args[2].clone();
-                Command::Derive { derive_command: derive_command }
-            },
+                Command::Derive {
+                    derive_command: derive_command,
+                }
+            }
             _ => return Err("Unknown command"),
         };
 
@@ -82,7 +87,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
             numbered,
         } => print(file_path, numbered)?,
         Command::List { list_command } => list(&config.grammar, list_command)?,
-        Command::Derive { derive_command } => derive(&config.grammar, derive_command)?
+        Command::Derive { derive_command } => derive(&config.grammar, derive_command)?,
     }
 
     Ok(())
@@ -151,15 +156,14 @@ Prints all useable commands.
 }
 
 pub fn list(grammar: &Grammar, list_command: Option<String>) -> Result<(), Box<dyn Error>> {
-
-    if list_command.is_some(){
+    if list_command.is_some() {
         let list_command = list_command.unwrap().to_lowercase();
-        if list_command == "rules"{
-            for (_, rule) in grammar.rules.iter().enumerate(){
+        if list_command == "rules" {
+            for (_, rule) in grammar.rules.iter().enumerate() {
                 println!("{}", rule.display())
             }
         }
-    }else{
+    } else {
         println!(
             "
     {}
@@ -175,15 +179,17 @@ pub fn list(grammar: &Grammar, list_command: Option<String>) -> Result<(), Box<d
     Ok(())
 }
 
-
-pub fn derive(grammar: &Grammar, derive_command: String) -> Result<(), Box<dyn Error>>{
-
-    if derive_command.to_lowercase() == "random"{
-    let mut derivation = Derivation::new(&grammar);
-    println!("Random Derived Word: {}", derivation.print_random(&grammar, Some(20)).unwrap_or("No Word Generated".to_string()).yellow());
-
+pub fn derive(grammar: &Grammar, derive_command: String) -> Result<(), Box<dyn Error>> {
+    if derive_command.to_lowercase() == "random" {
+        let mut derivation = Derivation::new(&grammar);
+        println!(
+            "Random Derived Word: {}",
+            derivation
+                .print_random(&grammar, Some(20))
+                .unwrap_or("No Word Generated".to_string())
+                .yellow()
+        );
     }
-
 
     Ok(())
 }
