@@ -1,5 +1,3 @@
-use std::thread::current;
-
 #[derive(Debug)]
 pub enum Token {
     // Brackets
@@ -71,11 +69,18 @@ pub enum LexerState {
     Start,
     End,
 
-    State1,
+    Words,
 
-    Equals,
-    LessThan,
-    GreaterThan,
+    Not,
+    And,
+    Or,
+
+    Dash,
+    Slash,
+
+    Equal,
+    Greater,
+    Less,
 }
 
 pub struct Lexer {
@@ -110,14 +115,22 @@ impl Lexer {
             if self.position >= self.input_string.len() {
                 if !self.buffer_string.is_empty() {
                     self.state = LexerState::Start;
-                    self.current_token = Token::ID {
-                        name: self.buffer_string.clone(),
-                    };
+                    self.current_token = self.match_buffer_string();
                     self.buffer_string = String::new();
                     break;
                 }
+                match self.state {
+                    LexerState::Greater => self.current_token = Token::GT,
+                    LexerState::Less => self.current_token = Token::LT,
+                    LexerState::Equal => self.current_token = Token::ASSIGN,
+                    LexerState::Not => self.current_token = Token::NOT,
+                    LexerState::Dash => self.current_token = Token::SUB,
+                    LexerState::Slash => self.current_token = Token::DIV,
+                    LexerState::And => self.current_token = Token::AND,
+                    LexerState::Or => self.current_token = Token::OR,
+                    _ => self.current_token = Token::EOI,
+                }
                 self.state = LexerState::End;
-                self.current_token = Token::EOI;
                 break;
             }
 
@@ -129,7 +142,7 @@ impl Lexer {
             match self.state {
                 LexerState::Start => match current_char {
                     'A'..='Z' | 'a'..='z' | '_' => {
-                        self.state = LexerState::State1;
+                        self.state = LexerState::Words;
                         self.buffer_string.push(current_char);
                     }
                     '{' => {
@@ -156,22 +169,169 @@ impl Lexer {
                         self.current_token = Token::PARENS_R;
                         break;
                     }
+                    '!' => {
+                        self.state = LexerState::Not;
+                    }
+                    '&' => {
+                        self.state = LexerState::And;
+                    }
+                    '|' => {
+                        self.state = LexerState::Or;
+                    }
+                    '.' => {
+                        self.current_token = Token::POINT;
+                        break;
+                    }
+                    ',' => {
+                        self.current_token = Token::COMMA;
+                        break;
+                    }
+                    ':' => {
+                        self.current_token = Token::COLON;
+                        break;
+                    }
+                    ';' => {
+                        self.current_token = Token::SEMICOLON;
+                        break;
+                    }
+                    '+' => {
+                        self.current_token = Token::ADD;
+                        break;
+                    }
+                    '-' => {
+                        self.state = LexerState::Dash;
+                    }
+                    '*' => {
+                        self.current_token = Token::MUL;
+                        break;
+                    }
+                    '/' => {
+                        self.state = LexerState::Slash;
+                    }
+                    '=' => {
+                        self.state = LexerState::Equal;
+                    }
+                    '<' => {
+                        self.state = LexerState::Less;
+                    }
+                    '>' => {
+                        self.state = LexerState::Greater;
+                    }
 
                     _ => {}
                 },
 
-                LexerState::State1 => match current_char {
+                LexerState::Words => match current_char {
                     'A'..'Z' | '_' | 'a'..'z' | '0'..'9' => {
                         self.buffer_string.push(current_char);
                     }
 
                     _ => {
                         self.state = LexerState::Start;
-                        self.current_token = Token::ID {
-                            name: self.buffer_string.clone(),
-                        };
+                        self.current_token = self.match_buffer_string();
                         self.buffer_string = String::new();
 
+                        self.position -= 1;
+                        break;
+                    }
+                },
+
+                LexerState::Not => match current_char {
+                    '=' => {
+                        self.state = LexerState::Start;
+                        self.current_token = Token::NEQ;
+                        break;
+                    }
+                    _ => {
+                        self.state = LexerState::Start;
+                        self.current_token = Token::NOT;
+                        self.position -= 1;
+                        break;
+                    }
+                },
+                LexerState::And => match current_char {
+                    '&' => {
+                        self.state = LexerState::Start;
+                        self.current_token = Token::AND;
+                        break;
+                    }
+                    _ => {
+                        self.state = LexerState::Start;
+                        self.position -= 1;
+                    }
+                },
+                LexerState::Or => match current_char {
+                    '|' => {
+                        self.state = LexerState::Start;
+                        self.current_token = Token::OR;
+                        break;
+                    }
+                    _ => {
+                        self.state = LexerState::Start;
+                        self.position -= 1;
+                    }
+                },
+                LexerState::Dash => match current_char {
+                    '>' => {
+                        self.state = LexerState::Start;
+                        self.current_token = Token::ARROW_R;
+                        break;
+                    }
+                    _ => {
+                        self.state = LexerState::Start;
+                        self.current_token = Token::SUB;
+                        self.position -= 1;
+                        break;
+                    }
+                },
+                LexerState::Equal => match current_char {
+                    '=' => {
+                        self.state = LexerState::Start;
+                        self.current_token = Token::EQ;
+                        break;
+                    }
+                    _ => {
+                        self.state = LexerState::Start;
+                        self.current_token = Token::ASSIGN;
+                        self.position -= 1;
+                        break;
+                    }
+                },
+                LexerState::Greater => match current_char {
+                    '=' => {
+                        self.state = LexerState::Start;
+                        self.current_token = Token::NLT;
+                        break;
+                    }
+                    _ => {
+                        self.state = LexerState::Start;
+                        self.current_token = Token::GT;
+                        self.position -= 1;
+                        break;
+                    }
+                },
+                LexerState::Less => match current_char {
+                    '=' => {
+                        self.state = LexerState::Start;
+                        self.current_token = Token::NGT;
+                        break;
+                    }
+                    _ => {
+                        self.state = LexerState::Start;
+                        self.current_token = Token::LT;
+                        self.position -= 1;
+                        break;
+                    }
+                },
+                LexerState::Slash => match current_char {
+                    '/' => {
+                        // Comments
+                        self.state = LexerState::Start;
+                    }
+
+                    _ => {
+                        self.state = LexerState::Start;
+                        self.current_token = Token::DIV;
                         self.position -= 1;
                         break;
                     }
@@ -190,10 +350,25 @@ impl Lexer {
     pub fn print_tokens(&mut self) {
         loop {
             self.advance();
-            println!("{:?}", self.curr());
             if let Token::EOI = self.curr() {
                 break;
             }
+            print!("{:?}, ", self.curr());
+        }
+        print!("{:?}", self.curr());
+    }
+
+    fn match_buffer_string(&self) -> Token {
+        match self.buffer_string.as_str() {
+            "func" => Token::FUNC,
+            "let" => Token::LET,
+            "if" => Token::IF,
+            "else" => Token::ELSE,
+            "while" => Token::WHILE,
+            "print" => Token::PRINT,
+            _ => Token::ID {
+                name: self.buffer_string.clone(),
+            },
         }
     }
 }
