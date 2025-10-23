@@ -117,41 +117,12 @@ impl Lexer {
 
     pub fn advance(&mut self) -> &Token {
         loop {
-            if self.position == self.input_string.len() {
-                match self.state {
-                    LexerState::Greater => self.current_token = Token::GT,
-                    LexerState::Less => self.current_token = Token::LT,
-                    LexerState::Equal => self.current_token = Token::ASSIGN,
-                    LexerState::Not => self.current_token = Token::NOT,
-                    LexerState::Dash => self.current_token = Token::SUB,
-                    LexerState::Slash => self.current_token = Token::DIV,
-                    LexerState::And => self.current_token = Token::AND,
-                    LexerState::Or => self.current_token = Token::OR,
-                    LexerState::NumPoint => {
-                        let value: i32 = self.buffer_string.parse().unwrap();
-                        self.state = LexerState::Start;
-                        self.current_token = Token::LIT_INT32 { value };
-                        self.buffer_string = String::new();
-                        self.position -= 1;
-                        break;
-                    }
-                    _ => self.current_token = Token::EOI,
-                }
-
-                if !self.buffer_string.is_empty() {
-                    self.state = LexerState::Start;
-                    self.current_token = self.match_buffer_string();
-                    self.buffer_string = String::new();
-                    break;
-                }
-                self.state = LexerState::End;
+            if matches!(self.current_token, Token::EOI) && matches!(self.state, LexerState::End) {
                 break;
             }
 
             let current_char = self.input_string.chars().nth(self.position).unwrap();
             //print!("{}", current_char);
-
-            self.position += 1;
 
             match self.state {
                 LexerState::Start => match current_char {
@@ -260,6 +231,7 @@ impl Lexer {
                     }
                 },
                 LexerState::Numbers => match current_char {
+                    // TODO check buffer when at EOI
                     '0'..='9' => {
                         self.buffer_string.push(current_char);
                     }
@@ -326,7 +298,6 @@ impl Lexer {
                     }
                 },
                 // TODO: Error Handling for unclosed chars/strings, invalid chars
-                // TODO: More case testing
                 LexerState::ReadString => match current_char {
                     '"' => {
                         self.state = LexerState::Start;
@@ -443,6 +414,42 @@ impl Lexer {
 
                 _ => {}
             }
+
+            self.position += 1;
+
+            if self.position == self.input_string.len() {
+                match self.state {
+                    LexerState::Greater => self.current_token = Token::GT,
+                    LexerState::Less => self.current_token = Token::LT,
+                    LexerState::Equal => self.current_token = Token::ASSIGN,
+                    LexerState::Not => self.current_token = Token::NOT,
+                    LexerState::Dash => self.current_token = Token::SUB,
+                    LexerState::Slash => self.current_token = Token::DIV,
+                    LexerState::And => self.current_token = Token::AND,
+                    LexerState::Or => self.current_token = Token::OR,
+                    LexerState::NumPoint => {
+                        let value: i32 = self.buffer_string.parse().unwrap();
+                        self.state = LexerState::Start;
+                        self.current_token = Token::LIT_INT32 { value };
+                        self.buffer_string = String::new();
+                        self.position -= 1;
+                        break;
+                    }
+                    _ => {
+                        self.current_token = Token::EOI;
+                        self.state = LexerState::End;
+                    }
+                }
+
+                if !self.buffer_string.is_empty() {
+                    self.state = LexerState::Start;
+                    self.current_token = self.match_buffer_string();
+                    self.buffer_string = String::new();
+                    break;
+                }
+                self.state = LexerState::End;
+                break;
+            }
         }
         self.curr()
     }
@@ -464,7 +471,7 @@ impl Lexer {
 
     fn match_buffer_string(&mut self) -> Token {
         let string = self.buffer_string.as_str();
-        match self.buffer_string.as_str() {
+        match string {
             "func" => Token::FUNC,
             "let" => Token::LET,
             "if" => Token::IF,
@@ -475,6 +482,12 @@ impl Lexer {
             "f32" => Token::TYPE_FLT32,
             "char" => Token::TYPE_CHAR,
             _ => {
+                if string.starts_with("\"") && string.ends_with("\"") {
+                    return Token::LIT_STRING {
+                        value: string.to_string(),
+                    };
+                }
+
                 if string.contains('.') {
                     let value = string.parse::<f32>().unwrap();
                     if value.fract() != 0.0 {
