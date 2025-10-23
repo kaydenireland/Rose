@@ -24,7 +24,7 @@ fn main() {
 
 #[allow(dead_code)]
 fn test_lexer() {
-    let mut lexer = Lexer::new("///".to_string());
+    let mut lexer = Lexer::new("i32 num = 10".to_string());
     lexer.print_tokens();
 }
 

@@ -51,9 +51,9 @@ pub enum Token {
     ID { name: String },
 
     // Basic Types
-    TYPE_INT32 { value: i32 },
-    TYPE_FLT32 { value: f32 },
-    TYPE_CHAR { value: char },
+    TYPE_INT32,
+    TYPE_FLT32,
+    TYPE_CHAR,
 
     // Literals
     LIT_INT32 { value: i32 },
@@ -69,7 +69,9 @@ pub enum LexerState {
     Start,
     End,
 
+    Chars,
     Words,
+    Numbers,
 
     Not,
     And,
@@ -142,7 +144,7 @@ impl Lexer {
             match self.state {
                 LexerState::Start => match current_char {
                     'A'..='Z' | 'a'..='z' | '_' => {
-                        self.state = LexerState::Words;
+                        self.state = LexerState::Chars;
                         self.buffer_string.push(current_char);
                     }
                     '{' => {
@@ -221,7 +223,7 @@ impl Lexer {
                     _ => {}
                 },
 
-                LexerState::Words => match current_char {
+                LexerState::Chars => match current_char {
                     'A'..'Z' | '_' | 'a'..'z' | '0'..'9' => {
                         self.buffer_string.push(current_char);
                     }
@@ -366,6 +368,9 @@ impl Lexer {
             "else" => Token::ELSE,
             "while" => Token::WHILE,
             "print" => Token::PRINT,
+            "i32" => Token::TYPE_INT32,
+            "f32" => Token::TYPE_FLT32,
+            "char" => Token::TYPE_CHAR,
             _ => Token::ID {
                 name: self.buffer_string.clone(),
             },
