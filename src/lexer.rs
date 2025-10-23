@@ -72,6 +72,8 @@ pub enum LexerState {
     Chars,
     Words,
     Numbers,
+    NumPoint,
+    Decimals,
 
     Not,
     And,
@@ -114,13 +116,7 @@ impl Lexer {
 
     pub fn advance(&mut self) -> &Token {
         loop {
-            if self.position >= self.input_string.len() {
-                if !self.buffer_string.is_empty() {
-                    self.state = LexerState::Start;
-                    self.current_token = self.match_buffer_string();
-                    self.buffer_string = String::new();
-                    break;
-                }
+            if self.position == self.input_string.len() {
                 match self.state {
                     LexerState::Greater => self.current_token = Token::GT,
                     LexerState::Less => self.current_token = Token::LT,
@@ -130,7 +126,22 @@ impl Lexer {
                     LexerState::Slash => self.current_token = Token::DIV,
                     LexerState::And => self.current_token = Token::AND,
                     LexerState::Or => self.current_token = Token::OR,
+                    LexerState::NumPoint => {
+                        let value: i32 = self.buffer_string.parse().unwrap();
+                        self.state = LexerState::Start;
+                        self.current_token = Token::LIT_INT32 { value };
+                        self.buffer_string = String::new();
+                        self.position -= 1;
+                        break;
+                    }
                     _ => self.current_token = Token::EOI,
+                }
+
+                if !self.buffer_string.is_empty() {
+                    self.state = LexerState::Start;
+                    self.current_token = self.match_buffer_string();
+                    self.buffer_string = String::new();
+                    break;
                 }
                 self.state = LexerState::End;
                 break;
@@ -219,18 +230,74 @@ impl Lexer {
                     '>' => {
                         self.state = LexerState::Greater;
                     }
+                    '0'..='9' => {
+                        self.state = LexerState::Numbers;
+                        self.buffer_string.push(current_char);
+                    }
 
                     _ => {}
                 },
 
                 LexerState::Chars => match current_char {
-                    'A'..'Z' | '_' | 'a'..'z' | '0'..'9' => {
+                    'A'..'Z' | '_' | 'a'..'z' | '-' | '0'..'9' => {
                         self.buffer_string.push(current_char);
                     }
 
                     _ => {
                         self.state = LexerState::Start;
                         self.current_token = self.match_buffer_string();
+                        self.buffer_string = String::new();
+
+                        self.position -= 1;
+                        break;
+                    }
+                },
+                LexerState::Numbers => match current_char {
+                    // TODO check buffer when at EOI
+                    '0'..='9' => {
+                        self.buffer_string.push(current_char);
+                    }
+
+                    '.' => {
+                        self.state = LexerState::NumPoint;
+                    }
+
+                    _ => {
+                        self.state = LexerState::Start;
+                        let value: i32 = self.buffer_string.parse().unwrap();
+                        self.current_token = Token::LIT_INT32 { value };
+                        self.buffer_string = String::new();
+
+                        self.position -= 1;
+                        break;
+                    }
+                },
+                LexerState::NumPoint => match current_char {
+                    '0'..='9' => {
+                        self.state = LexerState::Decimals;
+                        self.buffer_string.push('.');
+                        self.buffer_string.push(current_char);
+                    }
+
+                    _ => {
+                        self.state = LexerState::Start;
+                        let value: i32 = self.buffer_string.parse().unwrap();
+                        self.current_token = Token::LIT_INT32 { value };
+                        self.buffer_string = String::new();
+
+                        self.position -= 2;
+                        break;
+                    }
+                },
+                LexerState::Decimals => match current_char {
+                    '0'..='9' => {
+                        self.buffer_string.push(current_char);
+                    }
+
+                    _ => {
+                        self.state = LexerState::Start;
+                        let value: f32 = self.buffer_string.parse().unwrap();
+                        self.current_token = Token::LIT_FLT32 { value };
                         self.buffer_string = String::new();
 
                         self.position -= 1;
@@ -360,7 +427,8 @@ impl Lexer {
         print!("{:?}", self.curr());
     }
 
-    fn match_buffer_string(&self) -> Token {
+    fn match_buffer_string(&mut self) -> Token {
+        let string = self.buffer_string.as_str();
         match self.buffer_string.as_str() {
             "func" => Token::FUNC,
             "let" => Token::LET,
@@ -371,9 +439,25 @@ impl Lexer {
             "i32" => Token::TYPE_INT32,
             "f32" => Token::TYPE_FLT32,
             "char" => Token::TYPE_CHAR,
-            _ => Token::ID {
-                name: self.buffer_string.clone(),
-            },
+            _ => {
+                if string.contains('.') {
+                    let value = string.parse::<f32>().unwrap();
+                    if value.fract() != 0.0 {
+                        return Token::LIT_FLT32 { value };
+                    } else {
+                        return Token::LIT_INT32 {
+                            value: value as i32,
+                        };
+                    }
+                }
+                if let Ok(value) = string.parse::<i32>() {
+                    return Token::LIT_INT32 { value };
+                }
+
+                return Token::ID {
+                    name: string.to_string(),
+                };
+            }
         }
     }
 }
