@@ -1,8 +1,10 @@
 use colored::*;
 use std::error::Error;
 use std::fs;
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 
-use crate::{grammar::{Derivation, Grammar, Rule}, lexer::Lexer};
+use crate::{grammar::{Derivation, Grammar, Rule}, lexer::{Lexer, Token}};
 
 pub mod grammar;
 pub mod lexer;
@@ -174,6 +176,10 @@ pub fn list(grammar: &Grammar, list_command: Option<String>) -> Result<(), Box<d
         if list_command == "rules" {
             for (_, rule) in grammar.rules.iter().enumerate() {
                 println!("{}", rule.display())
+            }
+        }else if list_command == "tokens" {
+            for token in Token::iter(){
+                println!("{:?}", token);
             }
         }
     } else {

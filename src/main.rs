@@ -18,7 +18,7 @@ fn main() {
         process::exit(1);
     }
 
-    // example_manual();
+    //example_manual();
     //test_lexer();
 }
 

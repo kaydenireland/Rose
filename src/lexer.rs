@@ -1,6 +1,8 @@
 #![allow(warnings)]
 
-#[derive(Debug)]
+use strum_macros::EnumIter;
+
+#[derive(Debug, EnumIter)]
 pub enum Token {
     // Brackets
     PARENS_L,
