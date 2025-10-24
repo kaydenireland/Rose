@@ -2,7 +2,7 @@ use colored::*;
 use std::error::Error;
 use std::fs;
 
-use crate::grammar::{Derivation, Grammar, Rule};
+use crate::{grammar::{Derivation, Grammar, Rule}, lexer::Lexer};
 
 pub mod grammar;
 pub mod lexer;
@@ -12,6 +12,7 @@ pub enum Command {
     Print { file_path: String, numbered: bool },
     List { list_command: Option<String> },
     Derive { derive_command: String },
+    Tokenize { file_path: String }
 }
 
 pub struct Config {
@@ -68,9 +69,14 @@ impl Config {
                 }
 
                 let derive_command = args[2].clone();
-                Command::Derive {
-                    derive_command: derive_command,
+                Command::Derive { derive_command }
+            }
+            "tokenize" => {
+                if args.len() < 3 {
+                    return Err("Enter File Path");
                 }
+                let file_path = args[2].clone();
+                Command::Tokenize { file_path }
             }
             _ => return Err("Unknown command"),
         };
@@ -82,12 +88,10 @@ impl Config {
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     match config.command {
         Command::Help { help_command } => help(help_command)?,
-        Command::Print {
-            file_path,
-            numbered,
-        } => print(file_path, numbered)?,
+        Command::Print {  file_path, numbered} => print(file_path, numbered)?,
         Command::List { list_command } => list(&config.grammar, list_command)?,
         Command::Derive { derive_command } => derive(&config.grammar, derive_command)?,
+        Command::Tokenize { file_path } => tokenize(file_path),
     }
 
     Ok(())
@@ -131,24 +135,33 @@ Prints the contents of a file.
                 "print 'file_path' (--numbered)".yellow()
             );
         } else if help_command == "list" {
-            println!(
-                "
-Prints all useable commands.
-            "
+            println!("
+- Prints all grammar rules with {} keyword.
+- Prints all tokens with {} keyword.
+- Prints all commands when no keyword is given.
+                ", "rules".yellow(), "tokens".yellow()
             );
+        }else if help_command == "derive"{
+            println!("Creates a word from the grammar.")
+        } else if help_command == "tokenize"{
+            println!("Creates tokens from user inputted file.")
         } else {
-            println!("{}", "Command not found".red());
+            println!("{}", "Command not found.".red());
         }
     } else {
         println!(
             "
 {}\t\tProvides help information for Rose commands
 {}\t\tPrints text from a specified file
-{}\t\tPrints All Commands
+{}\t\tPrints all commands
+{}\t\tCreates word from grammar
+{}\tCreates tokens from inputted language
 ",
             "HELP".yellow(),
             "PRINT".yellow(),
-            "LIST".yellow()
+            "LIST".yellow(),
+            "DERIVE".yellow(),
+            "TOKENIZE".yellow()
         );
     }
 
@@ -169,10 +182,14 @@ pub fn list(grammar: &Grammar, list_command: Option<String>) -> Result<(), Box<d
     {}
     {}
     {}
+    {}
+    {}
     ",
             "HELP".yellow(),
             "PRINT".yellow(),
-            "LIST".yellow()
+            "LIST".yellow(),
+            "DERIVE".yellow(),
+            "TOKENIZE".yellow()
         );
     }
 
@@ -192,4 +209,10 @@ pub fn derive(grammar: &Grammar, derive_command: String) -> Result<(), Box<dyn E
     }
 
     Ok(())
+}
+
+pub fn tokenize(path: String){
+    let contents = fs::read_to_string(path).unwrap();
+    let mut lexer = Lexer::new(contents);
+    lexer.print_tokens();
 }

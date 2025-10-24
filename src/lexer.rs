@@ -1,3 +1,5 @@
+#![allow(warnings)]
+
 #[derive(Debug)]
 pub enum Token {
     // Brackets
@@ -452,6 +454,7 @@ impl Lexer {
     }
 
     pub fn print_tokens(&mut self) {
+        println!("");
         loop {
             self.advance();
             if let Token::EOI = self.curr() {

@@ -19,12 +19,12 @@ fn main() {
     }
 
     // example_manual();
-    test_lexer();
+    //test_lexer();
 }
 
 #[allow(dead_code)]
 fn test_lexer() {
-    let mut lexer = Lexer::new("\"Hello 'aa' World! 'b'".to_string());
+    let mut lexer = Lexer::new("let a = 32".to_string());
     lexer.print_tokens();
 }
 
