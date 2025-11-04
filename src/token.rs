@@ -1,8 +1,10 @@
 #![allow(warnings)]
 
+use std::clone;
+
 use strum_macros::EnumIter;
 
-#[derive(Debug, EnumIter)]
+#[derive(Debug, Clone, EnumIter)]
 pub enum Token {
     // Brackets
     PARENS_L,

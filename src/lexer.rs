@@ -27,7 +27,7 @@ pub struct Lexer {
     input_string: String,
     position: usize,
     state: LexerState,
-    pub current_token: Token,
+    current_token: Token,
     buffer_string: String,
 }
 
@@ -50,7 +50,7 @@ impl Lexer {
         self.buffer_string = String::new();
     }
 
-    pub fn advance(&mut self) -> &Token {
+    pub fn advance(&mut self) -> Token {
         loop {
             if self.position == self.input_string.len() {
                 match self.state {
@@ -382,8 +382,8 @@ impl Lexer {
         self.curr()
     }
 
-    pub fn curr(&self) -> &Token {
-        &self.current_token
+    pub fn curr(&self) -> Token {
+        self.current_token.clone()
     }
 
     pub fn print_tokens(&mut self) {
