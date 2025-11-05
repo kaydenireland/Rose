@@ -22,7 +22,7 @@ fn main() {
 
     //example_manual();
     //test_lexer();
-    test_parser();
+    //test_parser();
 }
 
 #[allow(dead_code)]
