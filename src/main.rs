@@ -1,9 +1,11 @@
 use std::env;
+use std::fs;
 use std::process;
 
 use rose::Config;
 use rose::grammar::{Derivation, Grammar, Rule};
 use rose::lexer::Lexer;
+use rose::parser::Parser;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -20,6 +22,17 @@ fn main() {
 
     //example_manual();
     //test_lexer();
+    //test_parser();
+}
+
+#[allow(dead_code)]
+fn test_parser() {
+    let lexer = Lexer::new(fs::read_to_string("src/lexer_test.txt").unwrap());
+    let mut parser = Parser::new(lexer);
+    let mtree = parser.analyze();
+
+    println!("\nMTree:");
+    mtree.print();
 }
 
 #[allow(dead_code)]

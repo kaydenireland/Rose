@@ -1,73 +1,4 @@
-#![allow(warnings)]
-
-use strum_macros::EnumIter;
-
-#[derive(Debug, EnumIter)]
-pub enum Token {
-    // Brackets
-    PARENS_L,
-    PARENS_R,
-
-    BRACKET_L,
-    BRACKET_R,
-
-    BRACE_L,
-    BRACE_R,
-
-    // Separators
-    POINT,
-    COMMA,
-    COLON,
-    SEMICOLON,
-    ARROW_R, // (->)
-
-    // Arithmetic Operators
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-
-    // Relational Operators
-    EQ,
-    LT,
-    GT,
-    NEQ, // Not Equal (!=)
-    NLT, // Not Less Than (>=)
-    NGT, // Not Greater Than (<=)
-
-    // Logical Operators
-    NOT,
-    AND,
-    OR,
-
-    // Assignment
-    ASSIGN,
-
-    // Keywords
-    FUNC,
-    LET,
-    IF,
-    ELSE,
-    WHILE,
-    PRINT,
-
-    // Identifiers
-    ID { name: String },
-
-    // Basic Types
-    TYPE_INT32,
-    TYPE_FLT32,
-    TYPE_CHAR,
-
-    // Literals
-    LIT_INT32 { value: i32 },
-    LIT_FLT32 { value: f32 },
-    LIT_CHAR { value: char },
-    LIT_STRING { value: String },
-
-    // End-of-Input
-    EOI,
-}
+use crate::token::Token;
 
 pub enum LexerState {
     Start,
@@ -96,7 +27,7 @@ pub struct Lexer {
     input_string: String,
     position: usize,
     state: LexerState,
-    pub current_token: Token,
+    current_token: Token,
     buffer_string: String,
 }
 
@@ -119,7 +50,7 @@ impl Lexer {
         self.buffer_string = String::new();
     }
 
-    pub fn advance(&mut self) -> &Token {
+    pub fn advance(&mut self) -> Token {
         loop {
             if self.position == self.input_string.len() {
                 match self.state {
@@ -451,8 +382,8 @@ impl Lexer {
         self.curr()
     }
 
-    pub fn curr(&self) -> &Token {
-        &self.current_token
+    pub fn curr(&self) -> Token {
+        self.current_token.clone()
     }
 
     pub fn print_tokens(&mut self) {
@@ -474,6 +405,7 @@ impl Lexer {
             "let" => Token::LET,
             "if" => Token::IF,
             "else" => Token::ELSE,
+            "return" => Token::RETURN,
             "while" => Token::WHILE,
             "print" => Token::PRINT,
             "i32" => Token::TYPE_INT32,

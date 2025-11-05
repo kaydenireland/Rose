@@ -2,19 +2,27 @@ use colored::*;
 use std::error::Error;
 use std::fs;
 use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
 
-use crate::{grammar::{Derivation, Grammar, Rule}, lexer::{Lexer, Token}};
+use crate::{
+    grammar::{Derivation, Grammar, Rule},
+    lexer::Lexer,
+    parser::Parser,
+    token::Token,
+};
 
 pub mod grammar;
 pub mod lexer;
+pub mod mtree;
+pub mod parser;
+pub mod token;
 
 pub enum Command {
     Help { help_command: Option<String> },
     Print { file_path: String, numbered: bool },
     List { list_command: Option<String> },
     Derive { derive_command: String },
-    Tokenize { file_path: String }
+    Tokenize { file_path: String },
+    Parse { file_path: String },
 }
 
 pub struct Config {
@@ -80,6 +88,13 @@ impl Config {
                 let file_path = args[2].clone();
                 Command::Tokenize { file_path }
             }
+            "parse" => {
+                if args.len() < 3 {
+                    return Err("Enter File Path");
+                }
+                let file_path = args[2].clone();
+                Command::Parse { file_path }
+            }
             _ => return Err("Unknown command"),
         };
 
@@ -90,10 +105,14 @@ impl Config {
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     match config.command {
         Command::Help { help_command } => help(help_command)?,
-        Command::Print {  file_path, numbered} => print(file_path, numbered)?,
+        Command::Print {
+            file_path,
+            numbered,
+        } => print(file_path, numbered)?,
         Command::List { list_command } => list(&config.grammar, list_command)?,
         Command::Derive { derive_command } => derive(&config.grammar, derive_command)?,
         Command::Tokenize { file_path } => tokenize(file_path),
+        Command::Parse { file_path } => parse(file_path),
     }
 
     Ok(())
@@ -137,16 +156,21 @@ Prints the contents of a file.
                 "print 'file_path' (--numbered)".yellow()
             );
         } else if help_command == "list" {
-            println!("
+            println!(
+                "
 - Prints all grammar rules with {} keyword.
 - Prints all tokens with {} keyword.
 - Prints all commands when no keyword is given.
-                ", "rules".yellow(), "tokens".yellow()
+                ",
+                "rules".yellow(),
+                "tokens".yellow()
             );
-        }else if help_command == "derive"{
+        } else if help_command == "derive" {
             println!("Creates a word from the grammar.")
-        } else if help_command == "tokenize"{
+        } else if help_command == "tokenize" {
             println!("Creates tokens from user inputted file.")
+        } else if help_command == "parse" {
+            println!("Parses tokens from user inputted file into an MTree.")
         } else {
             println!("{}", "Command not found.".red());
         }
@@ -158,12 +182,14 @@ Prints the contents of a file.
 {}\t\tPrints all commands
 {}\t\tCreates word from grammar
 {}\tCreates tokens from inputted language
+{}\t\tParses tokens from inputted file into an MTree
 ",
             "HELP".yellow(),
             "PRINT".yellow(),
             "LIST".yellow(),
             "DERIVE".yellow(),
-            "TOKENIZE".yellow()
+            "TOKENIZE".yellow(),
+            "PARSE".yellow()
         );
     }
 
@@ -177,8 +203,8 @@ pub fn list(grammar: &Grammar, list_command: Option<String>) -> Result<(), Box<d
             for (_, rule) in grammar.rules.iter().enumerate() {
                 println!("{}", rule.display())
             }
-        }else if list_command == "tokens" {
-            for token in Token::iter(){
+        } else if list_command == "tokens" {
+            for token in Token::iter() {
                 println!("{:?}", token);
             }
         }
@@ -190,12 +216,14 @@ pub fn list(grammar: &Grammar, list_command: Option<String>) -> Result<(), Box<d
     {}
     {}
     {}
+    {}
     ",
             "HELP".yellow(),
             "PRINT".yellow(),
             "LIST".yellow(),
             "DERIVE".yellow(),
-            "TOKENIZE".yellow()
+            "TOKENIZE".yellow(),
+            "PARSE".yellow()
         );
     }
 
@@ -217,8 +245,17 @@ pub fn derive(grammar: &Grammar, derive_command: String) -> Result<(), Box<dyn E
     Ok(())
 }
 
-pub fn tokenize(path: String){
+pub fn tokenize(path: String) {
     let contents = fs::read_to_string(path).unwrap();
     let mut lexer = Lexer::new(contents);
     lexer.print_tokens();
+}
+
+pub fn parse(path: String) {
+    let lexer = Lexer::new(fs::read_to_string(path).unwrap());
+    let mut parser = Parser::new(lexer);
+    let mtree = parser.analyze();
+
+    println!("\nMTree:");
+    mtree.print();
 }
