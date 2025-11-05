@@ -17,9 +17,9 @@ impl Parser {
     pub fn analyze(&mut self) -> MTree {
         self.indent = 0;
         self.advance();
-        self.parse();
+        let tree = self.parse();
         self.expect(Token::EOI);
-        MTree::new(Token::EOI)
+        tree
     }
 }
 
@@ -88,123 +88,144 @@ impl Parser {
 impl Parser {
     // simple recursive descend parser
 
-    pub fn parse(&mut self) {
-        self.parse_func();
+    pub fn parse(&mut self) -> MTree {
+        let mut tree = MTree::new(Token::START);
+        while !self.accept(Token::EOI) {
+            tree._push(self.parse_func());
+        }
+
+        tree
     }
 
-    pub fn parse_func(&mut self) {
+    pub fn parse_func(&mut self) -> MTree {
         self.indent_print("parse_func()");
         self.indent_increment();
+
+        let mut child = MTree::new(Token::FUNC_DECL);
+
         {
             self.expect(Token::FUNC);
+
+            let id = self.curr();
             self.expect(Token::id());
-            self.parse_parameter_list();
+            child._push(MTree::new(id));
+
+            child._push(self.parse_parameter_list());
 
             if self.accept(Token::ARROW_R) {
+                let token = self.curr();
                 self.expect_type();
+                child._push(MTree::new(token));
             }
 
-            self.parse_block_nest();
+            child._push(self.parse_block_nest());
         }
+
         self.indent_decrement();
 
-        if self.peek(Token::FUNC) {
-            self.parse_func();
-        }
+        child
     }
 
-    pub fn parse_parameter_list(&mut self) {
+    pub fn parse_parameter_list(&mut self) -> MTree {
         self.indent_print("parse_parameter_list()");
         self.indent_increment();
+
+        let mut child = MTree::new(Token::PARAM_LIST);
+
         {
             self.expect(Token::PARENS_L);
             if self.accept(Token::PARENS_R) {
-                return;
+                return child;
             }
-            self.parse_parameter();
+
+            child._push(self.parse_parameter());
             while self.accept(Token::COMMA) {
-                // list -> ( {param{,param}+}? )
-                self.parse_parameter(); // param -> id : id
+                child._push(self.parse_parameter());
             }
             self.expect(Token::PARENS_R);
         }
         self.indent_decrement();
+
+        child
     }
 
-    pub fn parse_parameter(&mut self) {
+    pub fn parse_parameter(&mut self) -> MTree {
         self.indent_print("parse_parameter()");
         self.indent_increment();
+
+        let mut child = MTree::new(Token::PARAM);
+
         {
+            let id = self.curr();
             self.expect(Token::id());
+            child._push(MTree::new(id));
+
             self.expect(Token::COLON);
+
+            let type_token = self.curr();
             self.expect_type();
+            child._push(MTree::new(type_token));
         }
         self.indent_decrement();
+
+        child
     }
 
-    pub fn parse_block_nest(&mut self) {
+    pub fn parse_block_nest(&mut self) -> MTree {
         self.indent_print("parse_block_nest()");
         self.indent_increment();
+
+        let mut child = MTree::new(Token::BLOCK);
+
         {
             self.expect(Token::BRACKET_L);
             while !self.peek(Token::BRACKET_R) {
-                self.parse_statement();
+                child._push(self.parse_statement());
             }
             self.expect(Token::BRACKET_R);
         }
         self.indent_decrement();
-    }
 
-    pub fn parse_block_list(&mut self) {
-        self.indent_print("parse_block_list()");
-        self.indent_increment();
-        {
-            self.parse_block_nest();
-            while !self.peek(Token::BRACKET_R) {
-                self.parse_statement();
-            }
-        }
-        self.indent_decrement();
+        child
     }
 }
 
 impl Parser {
     // statement/expression parsing functions
 
-    pub fn parse_statement(&mut self) {
+    pub fn parse_statement(&mut self) -> MTree {
         self.indent_print("parse_statement()");
         self.indent_increment();
+
+        let child: MTree;
         {
             match self.curr() {
-                Token::LET => self.parse_let(),
-                Token::IF => self.parse_if(),
-                Token::RETURN => self.parse_return(),
-                Token::BRACKET_L => self.parse_block_nest(),
+                Token::LET => child = self.parse_let(),
+                Token::IF => child = self.parse_if(),
+                Token::RETURN => child = self.parse_return(),
+                Token::BRACKET_L => child = self.parse_block_nest(),
                 _ => panic!("Unexpected token '{:?}' in statement!", self.curr()),
             }
         }
         self.indent_decrement();
+
+        child
     }
 
-    pub fn parse_expression(&mut self) {
+    pub fn parse_expression(&mut self) -> MTree {
         self.indent_print("parse_expression()");
         self.indent_increment();
 
+        let mut child = MTree::new(Token::EXPR);
+
         match self.curr() {
-            Token::LIT_INT32 { .. } => {
-                self.expect(Token::lit_i32());
-            }
-            Token::LIT_FLT32 { .. } => {
-                self.expect(Token::lit_f32());
-            }
-            Token::LIT_CHAR { .. } => {
-                self.expect(Token::lit_char());
-            }
-            Token::LIT_STRING { .. } => {
-                self.expect(Token::lit_string());
-            }
-            Token::ID { .. } => {
-                self.expect(Token::id());
+            Token::LIT_INT32 { .. }
+            | Token::LIT_FLT32 { .. }
+            | Token::LIT_CHAR { .. }
+            | Token::LIT_STRING { .. }
+            | Token::ID { .. } => {
+                child._push(MTree::new(self.curr()));
+                self.advance();
             }
             _ => {
                 panic!("Unexpected token '{:?}' in expression!", self.curr());
@@ -212,52 +233,73 @@ impl Parser {
         }
 
         self.indent_decrement();
+
+        child
     }
 
-    pub fn parse_let(&mut self) {
+    pub fn parse_let(&mut self) -> MTree {
         self.indent_print("parse_let()");
         self.indent_increment();
+
+        let mut child = MTree::new(Token::LET_STMT);
+
         {
             self.expect(Token::LET);
+
+            let id = self.curr();
             self.expect(Token::id());
+            child._push(MTree::new(id));
 
             if self.accept(Token::COLON) {
                 if self.curr().is_type() {
+                    let type_token = self.curr();
                     self.advance();
+                    child._push(MTree::new(type_token));
                 } else {
                     panic!("Expected type token after ':', got {:?}", self.curr());
                 }
             }
 
             self.expect(Token::ASSIGN);
-            self.parse_expression();
+            child._push(self.parse_expression());
             self.expect(Token::SEMICOLON);
         }
         self.indent_decrement();
+
+        child
     }
 
-    pub fn parse_if(&mut self) {
+    pub fn parse_if(&mut self) -> MTree {
         self.indent_print("parse_if()");
         self.indent_increment();
+
+        let mut child = MTree::new(Token::IF_STMT);
+
         {
             self.expect(Token::IF);
-            self.parse_expression();
-            self.parse_block_nest();
+            child._push(self.parse_expression());
+            child._push(self.parse_block_nest());
             if self.accept(Token::ELSE) {
-                self.parse_block_nest();
+                child._push(self.parse_block_nest());
             }
         }
         self.indent_decrement();
+
+        child
     }
 
-    pub fn parse_return(&mut self) {
+    pub fn parse_return(&mut self) -> MTree {
         self.indent_print("parse_return()");
         self.indent_increment();
+
+        let mut child = MTree::new(Token::RTRN_STMT);
         {
             self.expect(Token::RETURN);
-            self.parse_expression();
+            child._push(self.parse_expression());
             self.expect(Token::SEMICOLON);
         }
         self.indent_decrement();
+
+        child
     }
 }

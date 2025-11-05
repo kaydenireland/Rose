@@ -70,6 +70,17 @@ pub enum Token {
 
     // End-of-Input
     EOI,
+
+    // Metadata Nonterminals
+    START,
+    FUNC_DECL,
+    PARAM_LIST,
+    PARAM,
+    BLOCK,
+    IF_STMT,
+    LET_STMT,
+    RTRN_STMT,
+    EXPR,
 }
 
 impl PartialEq for Token {
