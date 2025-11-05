@@ -1,7 +1,7 @@
 #![allow(warnings)]
 
 use std::clone;
-
+use std::mem::discriminant;
 use strum_macros::EnumIter;
 
 #[derive(Debug, Clone, EnumIter)]
@@ -69,4 +69,18 @@ pub enum Token {
 
     // End-of-Input
     EOI,
+}
+
+impl PartialEq for Token {
+    fn eq(&self, other: &Self) -> bool {
+        discriminant(self) == discriminant(other)
+    }
+}
+
+impl Token {
+    pub fn id() -> Token {
+        Token::ID {
+            name: String::new(),
+        }
+    }
 }

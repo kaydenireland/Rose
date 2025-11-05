@@ -11,6 +11,8 @@ use crate::{
 
 pub mod grammar;
 pub mod lexer;
+pub mod mtree;
+pub mod parser;
 pub mod token;
 
 pub enum Command {
