@@ -405,6 +405,7 @@ impl Lexer {
             "let" => Token::LET,
             "if" => Token::IF,
             "else" => Token::ELSE,
+            "return" => Token::RETURN,
             "while" => Token::WHILE,
             "print" => Token::PRINT,
             "i32" => Token::TYPE_INT32,

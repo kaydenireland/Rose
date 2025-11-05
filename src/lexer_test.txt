@@ -1,6 +1,6 @@
-func add(x : int32) -> int32
+func add(x : i32) -> i32
 [
-    let value : int32 = 35;
+    let value : i32 = 35;
     if true [
        let a = 5;
     ] else [
@@ -11,6 +11,6 @@ func add(x : int32) -> int32
 
 func main()
 [
-    let sum : int32 = 42;
+    let sum : i32 = 42;
     return sum;
 ]

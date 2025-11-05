@@ -52,6 +52,7 @@ pub enum Token {
     ELSE,
     WHILE,
     PRINT,
+    RETURN,
 
     // Identifiers
     ID { name: String },
@@ -82,5 +83,32 @@ impl Token {
         Token::ID {
             name: String::new(),
         }
+    }
+
+    pub fn lit_i32() -> Token {
+        Token::LIT_INT32 { value: 0 }
+    }
+
+    pub fn lit_f32() -> Token {
+        Token::LIT_FLT32 { value: 0.0 }
+    }
+
+    pub fn lit_char() -> Token {
+        Token::LIT_CHAR { value: '\0' }
+    }
+
+    pub fn lit_string() -> Token {
+        Token::LIT_STRING {
+            value: String::new(),
+        }
+    }
+}
+
+impl Token {
+    pub fn is_type(&self) -> bool {
+        matches!(
+            self,
+            Token::TYPE_INT32 | Token::TYPE_FLT32 | Token::TYPE_CHAR
+        )
     }
 }
