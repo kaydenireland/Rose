@@ -61,12 +61,16 @@ pub enum Token {
     TYPE_INT32,
     TYPE_FLT32,
     TYPE_CHAR,
+    TYPE_BOOL,
 
     // Literals
     LIT_INT32 { value: i32 },
     LIT_FLT32 { value: f32 },
     LIT_CHAR { value: char },
+    LIT_BOOL { value: bool },
     LIT_STRING { value: String },
+
+    ERROR,
 
     // End-of-Input
     EOI,
@@ -78,6 +82,7 @@ pub enum Token {
     PARAM,
     BLOCK,
     IF_STMT,
+    WHILE_STMT,
     LET_STMT,
     RTRN_STMT,
     EXPR,
@@ -108,18 +113,19 @@ impl Token {
         Token::LIT_CHAR { value: '\0' }
     }
 
-    pub fn lit_string() -> Token {
-        Token::LIT_STRING {
-            value: String::new(),
+    pub fn lit_bool() -> Token {
+        Token::LIT_BOOL {
+            value: false,
         }
+    }
+
+    pub fn lit_string() -> Token {
+        Token::LIT_STRING { value: "".to_string() }
     }
 }
 
 impl Token {
     pub fn is_type(&self) -> bool {
-        matches!(
-            self,
-            Token::TYPE_INT32 | Token::TYPE_FLT32 | Token::TYPE_CHAR
-        )
+        matches!(self, Token::TYPE_INT32 | Token::TYPE_FLT32 | Token::TYPE_CHAR | Token::TYPE_BOOL)
     }
 }

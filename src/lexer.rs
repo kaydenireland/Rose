@@ -17,6 +17,7 @@ pub enum LexerState {
 
     Dash,
     Slash,
+    Comment,
 
     Equal,
     Greater,
@@ -84,8 +85,6 @@ impl Lexer {
             }
 
             let current_char = self.input_string.chars().nth(self.position).unwrap();
-            //print!("{}", current_char);
-
             self.position += 1;
 
             match self.state {
@@ -181,7 +180,7 @@ impl Lexer {
                 },
 
                 LexerState::Chars => match current_char {
-                    'A'..'Z' | '_' | 'a'..'z' | '-' | '0'..'9' => {
+                    'A'..='Z' | '_' | 'a'..='z' | '-' | '0'..='9' => {
                         self.buffer_string.push(current_char);
                     }
 
@@ -260,8 +259,6 @@ impl Lexer {
                         self.buffer_string.push(current_char);
                     }
                 },
-                // TODO: Error Handling for unclosed chars/strings, invalid chars
-                // TODO: More case testing
                 LexerState::ReadString => match current_char {
                     '"' => {
                         self.state = LexerState::Start;
@@ -364,8 +361,8 @@ impl Lexer {
                 },
                 LexerState::Slash => match current_char {
                     '/' => {
-                        // Comments
-                        self.state = LexerState::Start;
+                        // Comments - skip until end of line
+                        self.state = LexerState::Comment;
                     }
 
                     _ => {
@@ -373,6 +370,15 @@ impl Lexer {
                         self.current_token = Token::DIV;
                         self.position -= 1;
                         break;
+                    }
+                },
+                LexerState::Comment => match current_char {
+                    '\n' | '\r' => {
+                        // End of comment, return to start
+                        self.state = LexerState::Start;
+                    }
+                    _ => {
+                        // Continue skipping comment characters
                     }
                 },
 
@@ -411,6 +417,9 @@ impl Lexer {
             "i32" => Token::TYPE_INT32,
             "f32" => Token::TYPE_FLT32,
             "char" => Token::TYPE_CHAR,
+            "bool" => Token::TYPE_BOOL,
+            "true" => Token::LIT_BOOL { value: true },
+            "false" => Token::LIT_BOOL { value: false },
             _ => {
                 if string.contains('.') {
                     let value = string.parse::<f32>().unwrap();

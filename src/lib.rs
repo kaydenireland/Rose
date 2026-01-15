@@ -4,17 +4,18 @@ use std::fs;
 use strum::IntoEnumIterator;
 
 use crate::{
-    grammar::{Derivation, Grammar, Rule},
-    lexer::Lexer,
-    parser::Parser,
-    token::Token,
+    analyzer::{MTree as STree, SymbolTable, fold_constants, from_parse_tree}, grammar::{Derivation, Grammar, Rule}, lexer::Lexer, parser::Parser, token::Token
 };
 
 pub mod grammar;
 pub mod lexer;
 pub mod mtree;
 pub mod parser;
+pub mod pratt_parser;
 pub mod token;
+pub mod analyzer;
+pub mod types;
+pub mod codegen;
 
 pub enum Command {
     Help { help_command: Option<String> },
@@ -23,6 +24,8 @@ pub enum Command {
     Derive { derive_command: String },
     Tokenize { file_path: String },
     Parse { file_path: String },
+    Analyze { file_path: String },
+    Compile { file_path: String }
 }
 
 pub struct Config {
@@ -95,6 +98,20 @@ impl Config {
                 let file_path = args[2].clone();
                 Command::Parse { file_path }
             }
+            "analyze" => {
+                if args.len() < 3 {
+                    return Err("Enter File Path");
+                }
+                let file_path = args[2].clone();
+                Command::Analyze { file_path }
+            }
+            "compile" => {
+                if args.len() < 3 {
+                    return Err("Enter File Path");
+                }
+                let file_path = args[2].clone();
+                Command::Compile { file_path }
+            }
             _ => return Err("Unknown command"),
         };
 
@@ -113,6 +130,8 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         Command::Derive { derive_command } => derive(&config.grammar, derive_command)?,
         Command::Tokenize { file_path } => tokenize(file_path),
         Command::Parse { file_path } => parse(file_path),
+        Command::Analyze { file_path } => analyze_tree(file_path),
+        Command::Compile { file_path } => compile(file_path),
     }
 
     Ok(())
@@ -258,4 +277,88 @@ pub fn parse(path: String) {
 
     println!("\nMTree:");
     mtree.print();
+}
+
+pub fn analyze_tree(path: String) {
+    let lexer = Lexer::new(fs::read_to_string(path).unwrap());
+    let mut parser = Parser::new(lexer);
+    let mtree = parser.analyze();
+    
+    match from_parse_tree(&mtree) {
+        Ok(mut ast) => {
+            println!("\n=== Semantic AST ===\n{:#?}", ast);
+
+            fold_constants(&mut ast);
+
+            // symbol table
+            let mut sym_table = SymbolTable::new();
+
+            // run semantic analysis and report how many errors we found
+            match analyzer::analyze(&ast, &mut sym_table) {
+                Ok(_) => {
+                    println!("\n✓ Semantic analysis completed with 0 error(s).");
+                }
+                Err(errors) => {
+                    println!("\n✓ Semantic analysis completed with {} error(s):", errors.len());
+                    for (i, error) in errors.iter().enumerate() {
+                        println!("  {}. {}", i + 1, error);
+                    }
+                    println!("\n✗ Skipping execution due to semantic errors");
+                }
+            }
+        }
+        Err(e) => {
+            panic!("Semantic conversion failed: {}", e);
+        }
+    }
+}
+
+use inkwell::context::Context;
+use codegen::LlvmCodegen;
+
+fn compile_to_ir(semantic: &STree) -> Result<(), String> {
+    let context = Context::create();
+    let mut cg = LlvmCodegen::new(&context, "rose_module");
+    cg.emit_program(semantic)?;
+    cg.verify()?;
+    cg.write_ir_to_file("out.ll")?;
+    Ok(())
+}
+
+pub fn compile(path: String) {
+    let lexer = Lexer::new(fs::read_to_string(path).unwrap());
+    let mut parser = Parser::new(lexer);
+    let mtree = parser.analyze();
+    
+    match from_parse_tree(&mtree) {
+        Ok(mut ast) => {
+            println!("\n=== Semantic AST ===\n{:#?}", ast);
+
+            fold_constants(&mut ast);
+
+            // symbol table
+            let mut sym_table = SymbolTable::new();
+
+            // run semantic analysis and report how many errors we found
+            match analyzer::analyze(&ast, &mut sym_table) {
+                Ok(_) => {
+                    println!("\n✓ Semantic analysis completed with 0 error(s).");
+                    match compile_to_ir(&ast) {
+                        Ok(_) => {}
+                        Err(_) => {}
+                    }
+                }
+                Err(errors) => {
+                    println!("\n✓ Semantic analysis completed with {} error(s):", errors.len());
+                    for (i, error) in errors.iter().enumerate() {
+                        println!("  {}. {}", i + 1, error);
+                    }
+                    println!("\n✗ Skipping execution due to semantic errors");
+                }
+            }
+        }
+        Err(e) => {
+            panic!("Semantic conversion failed: {}", e);
+        }
+    }
 }
